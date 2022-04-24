@@ -1,0 +1,42 @@
+version: '3'
+services:
+  php:
+    image: yiisoftware/yii2-php:7.4-apache
+    volumes:
+      - ~/.composer-docker/cache:/root/.composer/cache:delegated
+      - ./:/app:delegated
+    ports:
+      - '8000:80'
+    depends_on:
+      - psql
+
+  psql:
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_USER: sqb
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sqb_test
+      PGDATA: /data/postgres
+    volumes:
+        - ./postgres:/data/postgres
+    ports:
+        - "5432:5432"
+    restart: unless-stopped
+
+  yii-init:
+    image: yiisoftware/yii2-php:7.4-apache
+    volumes:
+      - ~/.composer-docker/cache:/root/.composer/cache:delegated
+      - ./:/app:delegated
+    command:
+      - /bin/bash
+      - -c
+      - |
+        composer install
+        php yii migrate --interactive=0
+        php yii init
+        chmod -R 777 web/assets
+    links:
+      - php
+    depends_on:
+      - php
